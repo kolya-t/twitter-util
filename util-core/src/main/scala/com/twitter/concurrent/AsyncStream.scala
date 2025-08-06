@@ -644,10 +644,18 @@ object AsyncStream {
   /**
    * Transformation (or lift) from `Seq` into `AsyncStream`.
    */
-  def fromSeq[A](seq: Seq[A]): AsyncStream[A] = seq match {
-    case Nil => empty
-    case _ if SeqUtil.hasKnownSize(seq) && seq.tail.isEmpty => of(seq.head)
-    case _ => seq.head +:: fromSeq(seq.tail)
+  def fromSeq[A](seq: Seq[A]): AsyncStream[A] = {
+    val it = seq.iterator
+
+    def go(): AsyncStream[A] = {
+      if (it.hasNext) {
+        of(it.next()).flatMap(_ +:: go())
+      } else {
+        empty
+      }
+    }
+
+    go()
   }
 
   /**
