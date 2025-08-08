@@ -648,14 +648,11 @@ object AsyncStream {
     val it = seq.iterator
 
     def go(): AsyncStream[A] = {
-      if (it.hasNext) {
-        of(it.next()).flatMap(_ +:: go())
-      } else {
-        empty
-      }
+      val a = it.next()
+      if (it.hasNext) a +:: go() else of(a)
     }
 
-    go()
+    if (it.hasNext) go() else empty
   }
 
   /**
