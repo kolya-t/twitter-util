@@ -1,6 +1,5 @@
 package com.twitter.concurrent
 
-import com.twitter.conversions.SeqUtil
 import com.twitter.util.{Future, Return, Throw, Promise}
 import scala.annotation.varargs
 
@@ -246,9 +245,11 @@ sealed abstract class AsyncStream[+A] {
       case FromFuture(fa) =>
         Embed(fa.map { a => if (p(a)) this else empty })
       case Cons(fa, more) =>
-        Embed(fa.map { a =>
-          if (p(a)) Cons(fa, () => more().filter(p))
-          else more().filter(p)
+        Embed(fa.flatMap { a =>
+          Future(p(a)).map {
+            case true => Cons(fa, () => more().filter(p))
+            case false => more().filter(p)
+          }
         })
       case Embed(fas) => Embed(fas.map(_.filter(p)))
     }
